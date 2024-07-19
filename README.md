@@ -1,4 +1,4 @@
-# Read me please 
+# Read me please
 This folder contains codes designed to qaqc weather station data for the VIU hydromet network (https://qaqc-miniapp.shinyapps.io/qaqc_miniapp/). Note that each variable has a code associated with it that qaqcs the data (see this folder). The master code which contains all the qaqc functions necessary for the codes to work ("qaqc_functions.py") is also in this folder. 
 
 Each qaqc codes import the "qaqc_stations_list.py", which is a python file containing the name of the clean databases which required qaqcing on the database. For each of these stations, there is a list of variables which will be qaqced everytime the codes are ran. If one wants to add or remove a variable or weather station to qaqc, they can simply add or remove the necessary elements in the "qaqc_stations_list.py". All data on the qaqc webpage and databases contain a series of flag numbers, which are described below.
