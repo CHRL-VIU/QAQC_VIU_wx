@@ -277,11 +277,10 @@ for l in range(len(wx_stations_name)):
         qaqc_idx_sql = existing_qaqc_sql[var].notna()[::-1].idxmax()+1 # find latest valid value in sql database and fill after that
         dt_qaqc_idx_sql = existing_qaqc_sql['DateTime'].iloc[qaqc_idx_sql] # find matching datetime object in the qaqc db
         qaqc_idx_sql = (np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql)[0]) if np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql).size > 0 else 0
-        print('Amount of days to push to qaqc database: %d' %(int((qaqced_array.index[-1] - qaqc_idx_sql)/24)))
+        print('Amount of days to push to qaqc database: %d' %(int((qaqced_array.index[-1] - qaqced_array.index[qaqc_idx_sql])/24)))
         column_mapping = {
             'DateTime': 'DateTime',
             var: var,
             var_flags: var_flags
         }
         update_records(engine, metadata, 'qaqc_' + wx_stations_name[l], qaqced_array[qaqc_idx_sql:], column_mapping)
-connection.close()
