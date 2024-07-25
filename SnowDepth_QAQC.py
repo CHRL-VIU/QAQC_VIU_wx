@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import numpy as np
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
-import matplotlib.pyplot as plt
 
 #%% import support functions
 import qaqc_functions
@@ -259,15 +258,7 @@ for l in range(len(wx_stations_name)):
             max_hours = 3
             qaqc_8, flags_8 = qaqc_functions.interpolate_qaqc(qaqc_arr[var], data, flag, max_hours)
             qaqc_arr[var] = qaqc_8
-            
-            #%% plot
-            # fig, ax = plt.subplots()
-            # plt.axhline(y=0, color='k', linestyle='-', linewidth=0.5) # plot horizontal line at 0
-    
-            # ax.plot(sql_file['DateTime'].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)],raw, '#1f77b4', linewidth=1) # blue
-            # ax.plot(sql_file['DateTime'].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)],qaqc_8.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)], '#d62728', linewidth=1)
-            # ax.plot(sql_file['DateTime'].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)],qaqc_7.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)], '#ff7f0e', linewidth=1)
-            
+
             #%% merge flags together into large array, with comma separating multiple
             # flags for each row if these exist
             flags = pd.concat([flags_1,flags_2,flags_3,flags_4,flags_6,flags_7,flags_8],axis=1)

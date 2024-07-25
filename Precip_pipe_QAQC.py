@@ -10,8 +10,6 @@ import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
 
 #%% import support functions
-import os
-os.chdir('D:/GitHub/QAQC_VIU_wx')
 import qaqc_functions
 from push_sql_function import get_engine, get_metadata, update_records
 from qaqc_stations_list import *
