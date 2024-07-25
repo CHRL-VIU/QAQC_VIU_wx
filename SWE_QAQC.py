@@ -5,7 +5,6 @@
 import pandas as pd 
 from datetime import datetime, timedelta
 import numpy as np
-import re
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
 import os
@@ -37,8 +36,7 @@ for l in range(len(wx_stations_name)):
     sql_name = wx_stations_name_cap[l]
     print('###### Cleaning SWE data for station: %s ######' %(sql_name))     
     
-    #%% import current data on SQL database and clean name of some columns to match
-    # CSV column names
+    #%% import current data from "clean"
     sql_file = pd.read_sql(sql="SELECT * FROM clean_" + sql_database, con = engine)
     
     #%% time in rennell and datlamen is not rounded to nearest hour
@@ -58,21 +56,11 @@ for l in range(len(wx_stations_name)):
         sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
         
     #%% make sure you only go as far as specific date for all wx stations for current water year
-    # Mt Maya went offline in Nov 2024
-    if wx_stations_name[l] == 'mountmaya':
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00').size > 0 else 0   # today's date - 7 days
-        sql_file = sql_file[:sql_file_idx_latest+1]
-    # Machmell went offline in Feb 2023
-    elif wx_stations_name[l] == 'machmell':
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2023-02-12 11:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2023-02-12 11:00:00').size > 0 else 0   # today's date - 7 days
-        sql_file = sql_file[:sql_file_idx_latest+1]
-    # for all other stations, qaqc data up to last week
-    else:
-        qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate)[0]) if np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate).size > 0 else 0   # today's date - 7 days  
-        # sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00').size > 0 else 0  # arbitrary date
-        # sql_file = sql_file[:sql_file_idx_latest]
-        #sql_file = sql_file[sql_file_idx_latest:]
+    qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
+    sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate)[0]) if np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate).size > 0 else 0   # today's date - 7 days  
+    # sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00').size > 0 else 0  # arbitrary date
+    # sql_file = sql_file[:sql_file_idx_latest]
+    #sql_file = sql_file[sql_file_idx_latest:]
 
     #%% Make sure there is no gap in datetime (all dates are consecutive) and place
     # nans in all other values if any gaps are identified
@@ -86,6 +74,7 @@ for l in range(len(wx_stations_name)):
     else: 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year) # find min and max years
         
+    # remove specific years which are un-qaqceable
     if wx_stations_name[l] == 'claytonfalls':
         delete = [np.flatnonzero(yr_range == 2014),np.flatnonzero(yr_range == 2016),np.flatnonzero(yr_range == 2018)]
         yr_range = np.delete(yr_range, delete)
@@ -109,27 +98,28 @@ for l in range(len(wx_stations_name)):
         start_yr_sql = qaqc_functions.nearest(dt_sql, datetime(yr_range[k], 10, 1))
         end_yr_sql = qaqc_functions.nearest(dt_sql, datetime(yr_range[k]+1, 9, 30, 23, 00, 00))
     
-        # select data for the whole water year based on datetime object
+        #%% select data for the whole water year based on datetime object
         dt_yr = np.concatenate(([np.where(dt_sql == start_yr_sql), np.where(dt_sql == end_yr_sql)]))
 
         # only calculate summer period for all previous water years but not for
-        # current water year               
-        if yr_range[k] != 2023:
-            dt_summer_yr = np.concatenate(([np.where(dt_sql == np.datetime64(datetime(yr_range[k]+1, 7, 1, 00, 00, 00))), np.where(dt_sql == np.datetime64(datetime(yr_range[k]+1, 9, 23, 00, 00, 00)))]))
+        # current water year 
+              
+        # First check if there is a summer value in the database or not yet 
+        # (summer value == July 01) i.e. if summer has started yet for this 
+        # water year
+        if np.where(dt_sql == np.datetime64(datetime(yr_range[k]+1, 7, 1, 00, 00, 00)))[0].size != 0:
+            summer = True 
+        else:
+            summer = False
             
-        # for current water year and timeseries ends in June 2024 (temp fix - find more permanent fix)
-        if yr_range[k] == 2023 and wx_stations_name[l] == 'perseverance':
-            dt_summer_yr = np.concatenate(([np.where(dt_sql == np.datetime64(datetime(yr_range[k]+1, 6, 1, 00, 00, 00))), np.where(dt_sql.index == dt_sql.index[-1])]))
-        
+        # if summer is true from above, then provide indices for start and
+        # end of summer
+        if summer == True:
+            dt_summer_yr = np.concatenate(([np.where(dt_sql == qaqc_functions.nearest(dt_sql, np.datetime64(datetime(yr_range[k]+1, 7, 1, 00, 00, 00)))), np.where(dt_sql == qaqc_functions.nearest(dt_sql, np.datetime64(datetime(yr_range[k]+1, 9, 23, 00, 00, 00))))]))
+            
         # store for plotting (if needed)
         raw = sql_file[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)]
         qaqc_arr = sql_file.copy() # array to QAQC
-                
-        #%% add temporary fix to specific wx stations
-        if wx_stations_name[l] == 'lowercain':
-            idx_last = int(np.flatnonzero(qaqc_arr['DateTime'] == '2024-01-14 14:00:00'))
-            if idx_last in qaqc_arr.index:
-                qaqc_arr[var].loc[idx_last:] = np.nan
         
         #%% Apply static range test (remove values where difference is > than value)
         # Maximum value between each step: 10 degrees
@@ -140,9 +130,14 @@ for l in range(len(wx_stations_name)):
         qaqc_arr[var] = qaqc_1
         
         # add fix to LowerCain 2023-23 which is failing to identify outliers in Jan 2023
+        if wx_stations[l] == 'clean_lowercain' and yr_range[k] == 2023:
+            idx_last = np.where(qaqc_arr['DateTime'] == '2024-01-14 14:00:00')[0][0]
+            if idx_last in qaqc_arr.index:
+                qaqc_arr[var].loc[idx_last:] = np.nan
+        
         if wx_stations[l] == 'clean_lowercain' and yr_range[k] == 2022:
-            idx_first = int(np.flatnonzero(qaqc_arr['DateTime'] == '2023-01-05 21:00:00'))
-            idx_last = int(np.flatnonzero(qaqc_arr['DateTime'] == '2023-01-28 15:00:00'))
+            idx_first = np.where(qaqc_arr['DateTime'] == '2023-01-05 21:00:00')[0][0]
+            idx_last = np.where(qaqc_arr['DateTime'] == '2023-01-28 15:00:00')[0][0]
             qaqc_arr[var].iloc[idx_first:idx_last] = np.nan
             qaqc_arr["SWE"].iloc[idx_first:idx_last] = np.nan
             flags_1.iloc[idx_first:idx_last] = 1
@@ -150,31 +145,31 @@ for l in range(len(wx_stations_name)):
         # add fix to Tetrahedron which is failing to identify outliers in Spring 2021
         if wx_stations[l] == 'clean_tetrahedron' and yr_range[k] == 2021 or wx_stations[l] == 'clean_tetrahedron' and yr_range[k] == 2022:
             # first interval
-            idx_first = int(np.flatnonzero(qaqc_arr['DateTime'] == '2022-04-01 18:00:00'))
-            idx_last = int(np.flatnonzero(qaqc_arr['DateTime'] == '2022-04-06 13:00:00'))
+            idx_first = np.where(qaqc_arr['DateTime'] == '2022-04-01 18:00:00')[0][0]
+            idx_last = np.where(qaqc_arr['DateTime'] == '2022-04-06 13:00:00')[0][0]
             qaqc_arr[var].iloc[idx_first:idx_last] = np.nan
             qaqc_arr["SWE"].iloc[idx_first:idx_last] = np.nan
             flags_1.iloc[idx_first:idx_last] = 1
             
             # second interval
-            idx_first = int(np.flatnonzero(qaqc_arr['DateTime'] == '2022-05-16 11:00:00'))
-            idx_last = int(np.flatnonzero(qaqc_arr['DateTime'] == '2022-06-14 03:00:00'))
+            idx_first = np.where(qaqc_arr['DateTime'] == '2022-05-16 11:00:00')[0][0]
+            idx_last = np.where(qaqc_arr['DateTime'] == '2022-06-14 03:00:00')[0][0]
             qaqc_arr[var].iloc[idx_first:idx_last] = np.nan
             qaqc_arr["SWE"].iloc[idx_first:idx_last] = np.nan
             flags_1.iloc[idx_first:idx_last] = 1
             
             # third interval
-            idx_first = int(np.flatnonzero(qaqc_arr['DateTime'] == '2023-04-19 13:00:00'))
-            idx_last = int(np.flatnonzero(qaqc_arr['DateTime'] == '2023-06-12 20:00:00'))
+            idx_first = np.where(qaqc_arr['DateTime'] == '2023-04-19 13:00:00')[0][0]
+            idx_last = np.where(qaqc_arr['DateTime'] == '2023-06-12 20:00:00')[0][0]
             qaqc_arr[var].iloc[idx_first:idx_last] = np.nan
             qaqc_arr["SWE"].iloc[idx_first:idx_last] = np.nan
             flags_1.iloc[idx_first:idx_last] = 1
-                
+                                
         #%% Bring timeseries back to 0 at start of water year
         data = qaqc_arr[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)]
         flag = 3
         qaqc_3, flags_3 = qaqc_functions.reset_zero_watyr(qaqc_arr[var], data, flag)
-        qaqc_arr[var] = qaqc_3  
+        qaqc_arr[var] = qaqc_3 
         
         #%% Remove all negative values (non-sensical)
         data = qaqc_arr[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)]
@@ -192,10 +187,15 @@ for l in range(len(wx_stations_name)):
         #%% Remove non-sensical non-zero values in summer for SWE
         data = qaqc_arr[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)]
         flag = 6
-        summer_threshold = 12
-        qaqc_6, flags_6 = qaqc_functions.SWE_summer_zeroing(qaqc_arr[var], data, flag, dt_yr, dt_summer_yr, summer_threshold, qaqc_arr['DateTime'], wx_stations_name[l], yr_range[k]+1)
-        qaqc_arr[var] = qaqc_6
-          
+        
+        # for all water years except current one if summer has not yet arrived
+        if summer == False: # not summer yet
+            flags_6 = pd.Series(np.zeros((len(qaqc_arr))))        
+        elif summer == True: # summer or all previous years
+            summer_threshold = 12
+            qaqc_6, flags_6 = qaqc_functions.SWE_summer_zeroing(qaqc_arr[var], data, flag, dt_yr, dt_summer_yr, summer_threshold, qaqc_arr['DateTime'], wx_stations_name[l], yr_range[k]+1)
+            qaqc_arr[var] = qaqc_6
+        
         #%% one more pass to correct remaining outliers using the step size
         # and different levels until it's all 'shaved off'
         data = qaqc_arr[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)]
@@ -210,7 +210,7 @@ for l in range(len(wx_stations_name)):
         flag = 8
         max_hours = 3
         qaqc_8, flags_8 = qaqc_functions.interpolate_qaqc(qaqc_arr[var], data, flag, max_hours)
-        qaqc_arr[var] = qaqc_8
+        qaqc_arr[var] = qaqc_8 
         
         #%% merge flags together into large array, with comma separating multiple
         # flags for each row if these exist
@@ -233,7 +233,7 @@ for l in range(len(wx_stations_name)):
         qaqc_arr_final.append(qaqc_arr.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)])
 
     #%% push qaqced variable to SQL database
-    # as above, skip iteration if all air_temp is null
+    # as above, skip iteration if all SWE is null
     if sql_file[var].isnull().all() or dt_yr.size == 0:
         continue
     # otherwise, if data (most stations), keep running

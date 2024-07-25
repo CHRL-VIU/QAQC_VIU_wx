@@ -7,12 +7,11 @@
 
 # Written and modified by Julien Bodart (VIU) - 14.07.2024
 import pandas as pd 
-from datetime import datetime, timedelta
 import numpy as np
-import re
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
 import os
+from datetime import datetime
 
 #%% import support functions
 os.chdir('D:/GitHub/QAQC_VIU_wx')
@@ -46,12 +45,8 @@ for l in range(len(wx_stations_name)):
     sql_file = pd.read_sql(sql="SELECT * FROM qaqc_" + sql_database, con = engine)
 
     #%% make sure you only go as far as specific date for all wx stations for current water year
-    # Mt Maya went offline in Nov 2024
-    if wx_stations_name[l] == 'mountmaya':
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00').size > 0 else 0   # today's date - 7 days
-        sql_file = sql_file[:sql_file_idx_latest+1]
     # Machmell went offline in Feb 2023
-    elif wx_stations_name[l] == 'machmell':
+    if wx_stations_name[l] == 'machmell':
         sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2023-02-12 11:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2023-02-12 11:00:00').size > 0 else 0   # today's date - 7 days
         sql_file = sql_file[:sql_file_idx_latest+1]
     # for all other stations, qaqc data up to last week
@@ -73,6 +68,8 @@ for l in range(len(wx_stations_name)):
         yr_range = np.arange(dt_sql[0].year, datetime.now().year+1) # find min and max years
     elif wx_stations_name[l] == 'machmell': 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year-1) # find min and max years
+    elif wx_stations_name[l] == 'placeglacier' and dt_sql[0].year == datetime.now().year: 
+        yr_range = np.arange(2023, datetime.now().year) # specify this for placeglacier's first year
     else: 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year) # find min and max years
         

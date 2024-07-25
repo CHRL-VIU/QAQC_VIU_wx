@@ -5,7 +5,6 @@
 import pandas as pd 
 from datetime import datetime, timedelta
 import numpy as np
-import re
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
 import os
@@ -57,17 +56,11 @@ for l in range(len(wx_stations_name)):
         sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
     
     #%% make sure you only go as far as specific date for all wx stations for current water year
-    # Mt Maya went offline in Nov 2024
-    if wx_stations_name[l] == 'mountmaya':
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00').size > 0 else 0   # today's date - 7 days  
-        sql_file = sql_file[:sql_file_idx_latest+1]
-    # for all other stations, qaqc data up to last week
-    else:
-        qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate)[0]) if np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate).size > 0 else 0   # today's date - 7 days  
-        # sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00').size > 0 else 0  # arbitrary date
-        # sql_file = sql_file[:sql_file_idx_latest]
-        #sql_file = sql_file[sql_file_idx_latest:]
+    qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
+    sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate)[0]) if np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate).size > 0 else 0   # today's date - 7 days  
+    # sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00').size > 0 else 0  # arbitrary date
+    # sql_file = sql_file[:sql_file_idx_latest]
+    #sql_file = sql_file[sql_file_idx_latest:]
 
     #%% Make sure there is no gap in datetime (all dates are consecutive) and place
     # nans in all other values if any gaps are identified
@@ -80,6 +73,8 @@ for l in range(len(wx_stations_name)):
         yr_range = np.arange(dt_sql[0].year, datetime.now().year+1) # find min and max years
     elif wx_stations_name[l] == 'machmell': 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year-1) # find min and max years
+    elif wx_stations_name[l] == 'placeglacier' and dt_sql[0].year == datetime.now().year: 
+        yr_range = np.arange(2023, datetime.now().year) # specify this for placeglacier's first year
     else: 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year) # find min and max years
         

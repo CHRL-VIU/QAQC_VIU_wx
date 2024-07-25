@@ -56,7 +56,7 @@ The order of the flags in the below tables reflects the order of each qaqc step 
 | ------------- |
 | 0.	No qaqc required | 
 | 1.	Outlier removal #1 (between i and i-1): **85%** threshold | 
-| 2.	Remove non-sensical values above **100%** or below **0.5%** | 
+| 2.	Remove non-sensical values above **100%** or below **0.5%** (below **2.5%** for non-live Stephanies) | 
 | 3.	Remove duplicate consecutive values equal to **100% or 0.5%** for window size of **120 hours and 12 hours** respectively | 
 | 6.	Convert value 0 to NULL/NaN when a value of **0** is bounded on either side by +/- **75%** (this filters out values where sensor was faulty and defaulted to 0 for no reason) | 
 | 8.	Interpolation of NULL/NaN values for gaps smaller than or equal to **3 hours**. RH data is first converted to vapour pressure using the qaqced Air_Temp data | 

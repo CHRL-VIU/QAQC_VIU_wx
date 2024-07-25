@@ -5,7 +5,6 @@
 import pandas as pd 
 from datetime import datetime, timedelta
 import numpy as np
-import re
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
 import os
@@ -22,32 +21,6 @@ pd.set_option('mode.chained_assignment', None)
 #%% establish a connection with MySQL database 'viuhydro_wx_data_v2'
 engine = create_engine('mysql+mysqlconnector://viuhydro_shiny:.rt_BKD_SB*Q@192.99.62.147:3306/viuhydro_wx_data_v2', echo = False, pool_pre_ping=True, pool_recycle=3600)
 metadata = get_metadata(engine)
-
-#%% extract name of all tables within SQL database and clean up var name list
-connection = engine.raw_connection()
-cursor = connection.cursor()
-cursor.execute("Show tables;")
-wx_stations_lst = cursor.fetchall()
-wx_stations = []
-for i in range(len(wx_stations_lst)):
-    lst = (re.sub(r'[^\w\s]', '', str(wx_stations_lst[i])))
-    wx_stations.append(lst)
-    
-# remove 'raw' tables, remove all steph (but steph3), and others due to local issues
-# or because there is no sensor there, and sort out the name formatting
-wx_stations = [x for x in wx_stations if "clean" in x ]
-wx_stations = [x for x in wx_stations if not "archive" in x] # remove archive from list
-wx_stations = [x for x in wx_stations if not "legacy" in x] # remove legacy from list
-wx_stations = [x for x in wx_stations if not "placeglacier" in x] # remove placeglacier from list
-wx_stations = [x for x in wx_stations if not "clean_lowercain" in x] # remove legacy data for Cairnridgerun
-wx_stations = [w.replace('clean_steph3', 'clean_Stephanie3') for w in wx_stations] # rename steph3 so it doesn't get cut out
-wx_stations = [w.replace('clean_steph6', 'clean_Stephanie6') for w in wx_stations] # rename steph3 so it doesn't get cut out
-wx_stations = [x for x in wx_stations if not "steph" in x] # remove all stephanies
-wx_stations = [x for x in wx_stations if not "russell" in x] # remove rennell from list
-wx_stations = [w.replace('clean_Stephanie3', 'clean_steph3') for w in wx_stations] # rename steph3 back to original
-wx_stations = [w.replace('clean_Stephanie6', 'clean_steph6') for w in wx_stations] # rename steph6 back to original
-wx_stations_name = list(map(lambda st: str.replace(st, 'clean_', ''), wx_stations)) # remove 'clean_' for csv export
-wx_stations_name_cap = [wx_name.capitalize() for wx_name in wx_stations_name] # capitalise station name
 
 #%% create list of stations to qaqc for this variable
 var = 'Wind_Speed'
@@ -80,17 +53,13 @@ for l in range(len(wx_stations_name)):
     # else if not rennell or datlamen (i.e. for all other stations), make sure
     # time is consecutively increasing by one hour, if not add records and place nans
     else:
-        sql_files = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
+        sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
         
     #%% make sure you only go as far as specific date for all wx stations for current water year
-    # Mt Maya went offline in Nov 2024
-    if wx_stations_name[l] == 'mountmaya':
-        sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-01-11 07:00:00').size > 0 else 0  # arbitrary date
-        sql_file = sql_file[:sql_file_idx_latest]
     # Machmell went offline in Feb 2023
-    elif wx_stations_name[l] == 'machmell':
+    if wx_stations_name[l] == 'machmell':
         sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2023-02-12 11:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2023-02-12 11:00:00').size > 0 else 0  # arbitrary date
-        sql_file = sql_file[:sql_file_idx_latest]
+        sql_file = sql_file[:sql_file_idx_latest+1]
     # for all other stations, qaqc data up to last week
     else:
         qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
@@ -110,6 +79,8 @@ for l in range(len(wx_stations_name)):
         yr_range = np.arange(dt_sql[0].year, datetime.now().year+1) # find min and max years
     elif wx_stations_name[l] == 'machmell': 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year-1) # find min and max years
+    elif wx_stations_name[l] == 'placeglacier' and dt_sql[0].year == datetime.now().year: 
+        yr_range = np.arange(2023, datetime.now().year) # specify this for placeglacier's first year
     else: 
         yr_range = np.arange(dt_sql[0].year, datetime.now().year) # find min and max years
     
