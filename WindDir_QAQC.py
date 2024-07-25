@@ -7,10 +7,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
-import os
 
 #%% import support functions
-os.chdir('D:/GitHub/QAQC_VIU_wx')
 import qaqc_functions
 from push_sql_function import get_engine, get_metadata, update_records
 from qaqc_stations_list import *
@@ -65,8 +63,8 @@ for l in range(len(wx_stations_name)):
         qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
         sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate)[0]) if np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate).size > 0 else 0   # today's date - 7 days  
         # sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00').size > 0 else 0  # arbitrary date
-        # sql_file = sql_file[:sql_file_idx_latest]
-        #sql_file = sql_file[sql_file_idx_latest:]
+        sql_file = sql_file[:sql_file_idx_latest]
+        # sql_file = sql_file[sql_file_idx_latest:]
     
     #%% Make sure there is no gap in datetime (all dates are consecutive) and place
     # nans in all other values if any gaps are identified
@@ -154,46 +152,46 @@ for l in range(len(wx_stations_name)):
         existing_qaqc_sql = pd.read_sql('SELECT * FROM %s' %sql_qaqc_name, engine)
 
         #%%  write data to sql database using brute approach (re-write whole db - quicker on laptop but gets instantly killed on remote desktop)
-        colnames = existing_qaqc_sql.columns
-        col_positions = [i for i, s in enumerate(colnames) if var in s]
+        # colnames = existing_qaqc_sql.columns
+        # col_positions = [i for i, s in enumerate(colnames) if var in s]
          
-        # remove 'Pk_' from column selection
-        idx_remove = [i for i, s in enumerate(colnames) if 'Pk_' + var in s] # indices containing "Pk_" in string
-        del col_positions[int(np.flatnonzero(np.isin(col_positions, idx_remove))[0])]
-        del col_positions[int(np.flatnonzero(np.isin(col_positions, idx_remove))[0])]
-        existing_qaqc_sql[colnames[col_positions]] = pd.concat([qaqced_array[var],qaqced_array[var_flags]],axis=1)
+        # # remove 'Pk_' from column selection
+        # idx_remove = [i for i, s in enumerate(colnames) if 'Pk_' + var in s] # indices containing "Pk_" in string
+        # del col_positions[int(np.flatnonzero(np.isin(col_positions, idx_remove))[0])]
+        # del col_positions[int(np.flatnonzero(np.isin(col_positions, idx_remove))[0])]
+        # existing_qaqc_sql[colnames[col_positions]] = pd.concat([qaqced_array[var],qaqced_array[var_flags]],axis=1)
 
-        # make sure you keep the same variable dtypes when pushing new df to sql
-        metadata_map = MetaData(bind=engine)
-        table_map = Table(sql_qaqc_name, metadata, autoload_with=engine)
+        # # make sure you keep the same variable dtypes when pushing new df to sql
+        # metadata_map = MetaData(bind=engine)
+        # table_map = Table(sql_qaqc_name, metadata, autoload_with=engine)
         
-        # map SQLAlchemy types to pandas dtypes
-        type_mapping = {
-            'DATETIME': 'datetime64[ns]',
-            'DOUBLE': 'float64',
-            'FLOAT': 'float64',
-            'TEXT': 'object',
-        }
+        # # map SQLAlchemy types to pandas dtypes
+        # type_mapping = {
+        #     'DATETIME': 'datetime64[ns]',
+        #     'DOUBLE': 'float64',
+        #     'FLOAT': 'float64',
+        #     'TEXT': 'object',
+        # }
         
-        # map the correct dytpe in df to sql and push to sql db
-        existing_qaqc_sql = existing_qaqc_sql.astype({col.name: type_mapping.get(str(col.type).upper(), 'object') for col in table_map.columns if col.name in existing_qaqc_sql.columns})      
-        existing_qaqc_sql[var] = existing_qaqc_sql[var].astype('float64')
-        existing_qaqc_sql[var_flags] = existing_qaqc_sql[var_flags].astype('object')
-        existing_qaqc_sql.to_sql(name='%s' %sql_qaqc_name, con=engine, if_exists = 'replace', index=False)
+        # # map the correct dytpe in df to sql and push to sql db
+        # existing_qaqc_sql = existing_qaqc_sql.astype({col.name: type_mapping.get(str(col.type).upper(), 'object') for col in table_map.columns if col.name in existing_qaqc_sql.columns})      
+        # existing_qaqc_sql[var] = existing_qaqc_sql[var].astype('float64')
+        # existing_qaqc_sql[var_flags] = existing_qaqc_sql[var_flags].astype('object')
+        # existing_qaqc_sql.to_sql(name='%s' %sql_qaqc_name, con=engine, if_exists = 'replace', index=False)
         
-        # make sure you assign 'DateTime' column as the primary column
-        with engine.connect() as con:
-                con.execute('ALTER TABLE `qaqc_%s`' %wx_stations_name[l] + ' ADD PRIMARY KEY (`DateTime`);')
+        # # make sure you assign 'DateTime' column as the primary column
+        # with engine.connect() as con:
+        #         con.execute('ALTER TABLE `qaqc_%s`' %wx_stations_name[l] + ' ADD PRIMARY KEY (`DateTime`);')
         
          #%%  write data to sql database using soft approach (re-write only idx and vars needed - very slow on laptop but fast on remote desktop)
-#         qaqc_idx_sql = existing_qaqc_sql[var].notna()[::-1].idxmax()+1 # find latest valid value in sql database and fill after that
-#         dt_qaqc_idx_sql = existing_qaqc_sql['DateTime'].iloc[qaqc_idx_sql] # find matching datetime object in the qaqc db
-#         qaqc_idx_sql = (np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql)[0]) if np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql).size > 0 else 0
-#         print('Amount of days to push to qaqc database: %d' %(int((qaqced_array.index[-1] - qaqc_idx_sql)/24)))
-#         column_mapping = {
-#             'DateTime': 'DateTime',
-#             var: var,
-#             var_flags: var_flags
-#         }
-#         update_records(engine, metadata, 'qaqc_' + wx_stations_name[l], qaqced_array[qaqc_idx_sql:], column_mapping)
-# connection.close()
+        qaqc_idx_sql = existing_qaqc_sql[var].notna()[::-1].idxmax()+1 # find latest valid value in sql database and fill after that
+        dt_qaqc_idx_sql = existing_qaqc_sql['DateTime'].iloc[qaqc_idx_sql] # find matching datetime object in the qaqc db
+        qaqc_idx_sql = (np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql)[0]) if np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql).size > 0 else 0
+        print('Amount of days to push to qaqc database: %d' %(int((qaqced_array.index[-1] - qaqc_idx_sql)/24)))
+        column_mapping = {
+            'DateTime': 'DateTime',
+            var: var,
+            var_flags: var_flags
+        }
+        update_records(engine, metadata, 'qaqc_' + wx_stations_name[l], qaqced_array[qaqc_idx_sql:], column_mapping)
+connection.close()
