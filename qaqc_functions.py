@@ -190,7 +190,7 @@ def sdepth_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summ
     data_summer = data_all.iloc[np.arange(dt_summer_yr[0].item(),dt_summer_yr[1].item()+1)]
 
     # Read in the CSV containing specific summer dates for certain wx stations
-    with open([csv_file_path_server + 'sdepth_zeroing_dates.csv'], 'r') as readFile:
+    with open(csv_file_path_server + 'sdepth_zeroing_dates.csv', 'r') as readFile:
         df_csv = pd.read_csv(readFile,low_memory=False)
         csv_dt = pd.to_datetime(df_csv['zero_date'])
         df_csv['zero_date'] = csv_dt.dt.year.values
@@ -267,7 +267,7 @@ def SWE_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summer_
     # properly. If you see it doesn't, then enter manually the rough date by 
     # eye-balling it and put it into the csv. If it's there, the code will pull
     # it and set the summer at this date
-    with open([csv_file_path_server + 'SWE_zeroing_dates.csv'], 'r') as readFile:
+    with open(csv_file_path_server + 'SWE_zeroing_dates.csv', 'r') as readFile:
         df_csv = pd.read_csv(readFile,low_memory=False)
         csv_dt = pd.to_datetime(df_csv['zero_date'])
         df_csv['zero_date'] = csv_dt.dt.year.values
@@ -501,7 +501,7 @@ def precip_drainage_fix(data_all, data_subset, flag, dt_yr, dt, wx_stations_name
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     # Read in the CSV containing specific summer dates for certain wx stations
-    with open([csv_file_path_server + 'PrecipPipeRaw_drain.csv'], 'r') as readFile:
+    with open(csv_file_path_server + 'PrecipPipeRaw_drain.csv', 'r') as readFile:
         df_csv = pd.read_csv(readFile,low_memory=False)
         csv_dt_pre = pd.to_datetime(df_csv['pre_drain'], errors='coerce')
         csv_dt_post = pd.to_datetime(df_csv['post_drain'])
