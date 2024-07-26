@@ -9,7 +9,7 @@
 # Compiled by Julien Bodart (VIU) - 19.07.2024
 
 #%% To qaqc (22 stations in total, as of 19.07.2024)
-# clean_apelake = ['Air_Temp', 'RH', 'PP_Tipper', 'PC_Tipper', 'PC_Raw_Pipe', 'Wind_Speed', 'Wind_Dir', 'Pk_Wind_Speed', 'Pk_Wind_Dir', 'Snow_Depth', 'SWE']
+clean_apelake = ['Air_Temp', 'RH', 'PP_Tipper', 'PC_Tipper', 'PC_Raw_Pipe', 'Wind_Speed', 'Wind_Dir', 'Pk_Wind_Speed', 'Pk_Wind_Dir', 'Snow_Depth', 'SWE']
 clean_cainridgerun = ['Air_Temp', 'RH', 'PP_Tipper', 'PC_Tipper', 'Wind_Speed', 'Wind_Dir', 'Pk_Wind_Speed', 'Pk_Wind_Dir', 'Snow_Depth']
 clean_claytonfalls = ['Air_Temp', 'RH', 'BP', 'PP_Tipper', 'PC_Tipper', 'PC_Raw_Pipe', 'Wind_Speed', 'Wind_Dir', 'Pk_Wind_Speed', 'Pk_Wind_Dir', 'Snow_Depth', 'SWE']
 clean_datlamen = ['Air_Temp', 'RH', 'PP_Tipper', 'PC_Tipper', 'Wind_Speed', 'Wind_Dir', 'Pk_Wind_Speed']
