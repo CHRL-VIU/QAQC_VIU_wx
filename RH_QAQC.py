@@ -67,10 +67,10 @@ for l in range(len(wx_stations_name)):
         sql_file = sql_file[:sql_file_idx_latest+1]
     # for all other stations, qaqc data up to last week
     else:
-        qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
+        qaqc_upToDate = sql_file['DateTime'].iloc[-1] # todays date rounded to nearest hour
         sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate)[0]) if np.flatnonzero(sql_file['DateTime'] == qaqc_upToDate).size > 0 else 0   # today's date - 7 days  
         # sql_file_idx_latest = int(np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] == '2024-02-19 06:00:00').size > 0 else 0  # arbitrary date
-        sql_file = sql_file[:sql_file_idx_latest]
+        sql_file = sql_file[:sql_file_idx_latest+1]
         # sql_file = sql_file[sql_file_idx_latest:]
  
     #%% Make sure there is no gap in datetime (all dates are consecutive) and place

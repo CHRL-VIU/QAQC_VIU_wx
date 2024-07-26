@@ -8,6 +8,9 @@ import numpy as np
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
 
+# csv file path on server
+csv_file_path_server = '/python-scripts/QAQC_VIU_wx/'
+
 #%% import support functions
 import qaqc_functions
 from push_sql_function import get_engine, get_metadata, update_records
@@ -102,7 +105,7 @@ for l in range(len(wx_stations_name)):
         # wx stations. This CSV was created for where the qaqc algorithm fails
         # to detect accurately the start of the summer (or where snow depth
         # reaches approximately 0)
-        with open('sdepth_zeroing_dates.csv', 'r') as readFile:
+        with open(csv_file_path_server + 'sdepth_zeroing_dates.csv', 'r') as readFile:
             df_csv = pd.read_csv(readFile,low_memory=False)
             csv_dt = pd.to_datetime(df_csv['zero_date'])
             df_csv['zero_date'] = csv_dt.dt.year.values
