@@ -95,7 +95,7 @@ wx_stations_name = list(map(lambda st: str.replace(st, 'clean_', ''), wx_station
 wx_stations_name_cap = [wx_name.capitalize() for wx_name in wx_stations_name] # capitalise station name
 
 #%% Loop over each station at a time and clean up the snow depth variable
-for l in range(0,1):#len(wx_stations_name)):
+for l in range(len(wx_stations_name)):
     sql_database = wx_stations_name[l]
     sql_name = wx_stations_name_cap[l]
     print('###### Creating dummy sql database for station: %s ######' %(sql_name))     
