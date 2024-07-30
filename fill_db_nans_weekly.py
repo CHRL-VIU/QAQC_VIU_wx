@@ -55,14 +55,14 @@ import qaqc_functions
 engine = create_engine('mysql+mysqlconnector://viuhydro_shiny:.rt_BKD_SB*Q@192.99.62.147:3306/viuhydro_wx_data_v2', echo = False)
 
 #%% extract name of all tables within SQL database and clean up var name list
-with engine.connect() as connection:
-    result = connection.execute("SHOW TABLES;")
-    wx_stations_lst = result.fetchall()
-    
+connection = engine.raw_connection()
+cursor = connection.cursor()
+cursor.execute("Show tables;")
+wx_stations_lst = cursor.fetchall()
 wx_stations = []
 for i in range(len(wx_stations_lst)):
-    lst = re.sub(r'[^\w\s]', '', str(wx_stations_lst[i]))
-    wx_stations.append(lst)
+     lst = (re.sub(r'[^\w\s]', '', str(wx_stations_lst[i])))
+     wx_stations.append(lst)
    
 # remove 'raw' tables, remove all steph (but steph3), and others due to local issues
 # or because there is no snowDepth sensor there, and sort out the name formatting
@@ -94,7 +94,7 @@ else:
 wx_stations_name = list(map(lambda st: str.replace(st, 'clean_', ''), wx_stations)) # remove 'clean_' for csv export
 wx_stations_name_cap = [wx_name.capitalize() for wx_name in wx_stations_name] # capitalise station name
 
-#%% Loop over each station  and push only the rows that need qaqcing (last week)
+#%% Loop over each station at a time and clean up the snow depth variable
 for l in range(len(wx_stations_name)):
     sql_database = wx_stations_name[l]
     sql_name = wx_stations_name_cap[l]
@@ -103,10 +103,9 @@ for l in range(len(wx_stations_name)):
     #%% import current data from "clean" and "qaqc" databases and make sure clean
     # records have no gaps in the DateTime column (i.e. hourly records are 
     # continuous every hour)
-    with engine.connect() as connection:
-        sql_file = pd.read_sql(sql="SELECT * FROM clean_" + sql_database, con=connection)
-        sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index()
-        sql_file_qaqc = pd.read_sql(sql="SELECT * FROM qaqc_" + sql_database, con=connection)
+    sql_file = pd.read_sql(sql="SELECT * FROM clean_" + sql_database, con = engine)
+    sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index() # make sure records are continuous every hour
+    sql_file_qaqc = pd.read_sql(sql="SELECT * FROM qaqc_" + sql_database, con = engine)
 
     #%% Only select earliest possible date for full year
     dt_sql = pd.to_datetime(sql_file['DateTime'])    
@@ -181,8 +180,7 @@ for l in range(len(wx_stations_name)):
     #df_full.to_sql(name='qaqc_%s' %wx_stations_name[l], con=engine, if_exists = 'append', index=False)
     
     # to import only last week of data
-    with engine.connect() as connection:
-        df_full[sql_file_qaqc.index[-1]+1:].to_sql(name='qaqc_%s' %wx_stations_name[l], con=connection, if_exists = 'append', index=False)
+    df_full[sql_file_qaqc.index[-1]+1:].to_sql(name='qaqc_%s' %wx_stations_name[l], con=engine, if_exists = 'append', index=False)
 
 #%% Close the sql connection after the loop has completed
 print('## Finished creating empty rows for newly qaqc data for all stations ##')     
