@@ -12,6 +12,11 @@ csv_file_path_server = '/python-scripts/QAQC_VIU_wx/'
 
 #%% Static range test (result: FAIL if TRUE)
 def static_range_test(data_all, data_subset, flag, step):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     # only select non-nan data points
@@ -25,13 +30,19 @@ def static_range_test(data_all, data_subset, flag, step):
         # large outliers being removed due to lengthier gap in data
         if abs(data.iloc[i] - data.iloc[i-1]) > step and data.index[i]-data.index[i-1] < 72:
             idx = data.index[i]
-            data_all[idx] = np.nan
-            flag_arr[idx] = flag         
+            data_all.loc[idx] = np.nan
+            flag_arr.loc[idx] = flag         
     return data_all, flag_arr
+
 
 #%% shave off outliers (similar to static_range_test function but it repeats 
 # the process for multiple steps)
 def static_range_multiple(data_all, data_subset, flag, steps):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
 
     for h in range(len(steps)):
@@ -44,37 +55,47 @@ def static_range_multiple(data_all, data_subset, flag, steps):
             if abs(data[data.index[i]] - data[data.index[i-1]]) > step:
                 idx = data.index[i]
                 data_subset[idx] = np.nan
-                data_all[idx] = np.nan
-                flag_arr[idx] = flag         
+                data_all.loc[idx] = np.nan
+                flag_arr.loc[idx] = flag         
     return data_all, flag_arr
 
 #%% Remove duplicate values (only if there are 3x duplicate values)
 def duplicates(data_all, data_subset, flag):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     for i in range(len(data_subset)-2):
         if abs(data_subset.iloc[i+1] - data_subset.iloc[i]) == 0 and abs(data_subset.iloc[i+2] - data_subset.iloc[i+1]) == 0:
             idx = data_subset.index[i]
-            data_all[idx] = np.nan
-            flag_arr[idx] = flag        
+            data_all.loc[idx] = np.nan
+            flag_arr.loc[idx] = flag        
     return data_all, flag_arr
 
 #%% Remove duplicate values of 0% or 100% over specific window size
 def duplicates_window(data_all, data_subset, flag, window, threshold):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     for i in range(len(data_subset)-window):
         # for duplicate values at 100
         if threshold == 100 and all(data_subset.iloc[i:i+window] == threshold):
             idx = data_subset.index[i:i+window]
-            data_all[idx] = np.nan
-            flag_arr[idx] = flag  
+            data_all.loc[idx] = np.nan
+            flag_arr.loc[idx] = flag  
             
         # for duplicate values at 0
         elif threshold == 0 and all(data_subset.iloc[i:i+window] == threshold):
             idx = data_subset.index[i:i+window]
-            data_all[idx] = np.nan
-            flag_arr[idx] = flag      
+            data_all.loc[idx] = np.nan
+            flag_arr.loc[idx] = flag      
             
     return data_all, flag_arr
 
@@ -84,6 +105,11 @@ def duplicates_window(data_all, data_subset, flag, window, threshold):
 # to find difference between adjacent values and calculate if those duplicates
 # are found over a window greater than the one set in the parameters
 def duplicates_window_WindDir(data_all, data_subset, flag, window):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+
     flag_arr = pd.Series(np.zeros((len(data_all))))
     end = False # in case the last elements in the ts are not duplicates
   
@@ -115,8 +141,8 @@ def duplicates_window_WindDir(data_all, data_subset, flag, window):
                 idx = data_subset.index[idx_jumps[i]+1:idx_jumps[i+1]+2] # +2
             
             # place nans and add a flag number
-            data_all[idx] = np.nan
-            flag_arr[idx] = flag 
+            data_all.loc[idx] = np.nan
+            flag_arr.loc[idx] = flag 
             
     return data_all, flag_arr
 
@@ -186,6 +212,11 @@ def duplicates_window_WindDir(data_all, data_subset, flag, window):
 # stations flatten out earlier in the summer, so the oode does not pick these 
 # up well. Instead, a csv with dates when snow melt flattens around zero is imported
 def sdepth_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summer_threshold, dt, wx_stations_name, year):
+
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     data_summer = data_all.iloc[np.arange(dt_summer_yr[0].item(),dt_summer_yr[1].item()+1)]
 
@@ -211,10 +242,10 @@ def sdepth_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summ
     # else if there is no specific dates in the csv, then run below
     else:
         if threshold == True: # if mean is bigger, then use this as threshold
-            data_bool = data_all.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)] < mean_value_summer
+            data_bool = data_all.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)].copy() < mean_value_summer
             
         else: # else if mean is smaller, then use arbitrary value as threshold
-            data_bool = data_all.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)] < arbitrary_value
+            data_bool = data_all.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)].copy() < arbitrary_value
         data_bool = data_bool.replace({True:1, False:0})
         data_bool[data_subset[data_subset.isnull()].index] = 1 # replace nans with 1
         
@@ -226,8 +257,8 @@ def sdepth_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summ
         data_bool.iloc[0:round(len(data_subset)/2)] = 0
         idx_longest_sequence = data_bool.index[max(((lambda y: (y[0][0], len(y)))(list(g)) for k, g in groupby(enumerate(data_bool==1), lambda x: x[1]) if k), key=lambda z: z[1])[0]]
     
-    data_all[np.arange(idx_longest_sequence,dt_yr[1].item()+1)] = 0
-    flag_arr[np.arange(idx_longest_sequence,dt_yr[1].item()+1)]  = flag          
+    data_all.loc[np.arange(idx_longest_sequence,dt_yr[1].item()+1)] = 0
+    flag_arr.loc[np.arange(idx_longest_sequence,dt_yr[1].item()+1)]  = flag          
 
     return data_all, flag_arr
 
@@ -258,6 +289,11 @@ def sdepth_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summ
 # =============================================================================
 
 def SWE_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summer_threshold, dt, wx_stations_name, year):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     data_summer = data_all.iloc[np.arange(dt_summer_yr[0].item(),dt_summer_yr[1].item()+1)]
 
@@ -312,6 +348,11 @@ def SWE_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summer_
     
 #%% Remove values above the mean of a sliding window of sample length "window_len" 
 def mean_sliding_window(data_all, data_subset, flag, window_len, mean_sliding_val):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     idx_exist = (data_subset.iloc[:].loc[data_subset.isnull()==False].index.tolist()) # indices of existing values
     max_outliers = data_subset[idx_exist] # only keep non-nan values
@@ -321,57 +362,77 @@ def mean_sliding_window(data_all, data_subset, flag, window_len, mean_sliding_va
         window = max_outliers[i:i+window_len]
         if abs(max_outliers.iloc[i] - window.mean()) > mean_sliding_val:
             idx = max_outliers.index[i]
-            data_all[idx] = np.nan # place nans if outliers
-            flag_arr[idx] = flag          
+            data_all.loc[idx] = np.nan # place nans if outliers
+            flag_arr.loc[idx] = flag          
 
     # then apply window for i+window_len to i to get remaining outliers    
     for i in range(window_len,len(max_outliers)):
         window = max_outliers[i-window_len:i]
         if abs(max_outliers.iloc[i] - window.mean()) > mean_sliding_val:
             idx = max_outliers.index[i]
-            data_all[idx] = np.nan
-            flag_arr[idx] = flag        
+            data_all.loc[idx] = np.nan
+            flag_arr.loc[idx] = flag        
     
     return data_all, flag_arr
 
 #%% Remove all negative values
 def negtozero(data_all, data_subset, flag):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
 
     for i in range(len(data_subset)-1):
         if data_subset.iloc[i] < 0:
             idx = data_subset.index[i]
-            data_all[idx] = 0 
-            flag_arr[idx] = flag        
+            data_all.loc[idx] = 0 
+            flag_arr.loc[idx] = flag        
     
     return data_all, flag_arr
 
 #%% Remove all values above specific threshold
 def reset_max_threshold(data_all, data_subset, flag, threshold):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
 
     for i in range(len(data_subset)-1):
         if data_subset.iloc[i] > threshold:
             idx = data_subset.index[i]
-            data_all[idx] = np.nan 
+            data_all.loc[idx] = np.nan 
             flag_arr[idx] = flag        
     
     return data_all, flag_arr
 
 #%% Remove all values below specific threshold
 def reset_min_threshold(data_all, data_subset, flag, threshold):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
 
     for i in range(len(data_subset)-1):
         if data_subset.iloc[i] < threshold:
             idx = data_subset.index[i]
-            data_all[idx] = np.nan 
-            flag_arr[idx] = flag        
+            data_all.loc[idx] = np.nan 
+            flag_arr.loc[idx] = flag        
     
     return data_all, flag_arr
 
 #%% Reset timeseries to zero at start of water year if it's not already the case
 def reset_zero_watyr(data_all, data_subset, flag):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+
     flag_arr = pd.Series(np.zeros((len(data_all))))
 
     idx_first_valid = data_subset.first_valid_index() # first non-nan value in series
@@ -384,6 +445,10 @@ def reset_zero_watyr(data_all, data_subset, flag):
 #%% Remove outliers based on mean and std using a rolling window for each
 # month of the year
 def mean_rolling_month_window(data_all, flag, dt_sql, sd):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     dt_months = dt_sql.dt.month.values
@@ -396,24 +461,29 @@ def mean_rolling_month_window(data_all, flag, dt_sql, sd):
         else: # for last index [i]
             idx = [gaps[i]+1,len(dt_months)-1]
             
-        data_mth = data_all[np.arange(idx[0],idx[1])] # all data from month [i] with index matching bigger array
+        data_mth = data_all.iloc[np.arange(idx[0],idx[1]+1)].copy() # all data from month [i] with index matching bigger array
         outliers = data_mth[data_mth > data_mth.mean() + sd*(data_mth.std())] # all outliers in this month matching index of bigger array
 
-        data_all[outliers.index] = np.nan 
-        flag_arr[outliers.index] = flag
+        data_all.loc[outliers.index] = np.nan 
+        flag_arr.loc[outliers.index] = flag
       
     return data_all, flag_arr
 
 #%% Interpolate qaqced wx station data over specific length of time (max_hours)
 def interpolate_qaqc(data_all, data_subset, flag, max_hours):
+
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     mask = data_subset.isna()
     mask = (mask.groupby((mask != mask.shift()).cumsum()).transform(lambda x: len(x) <= max_hours)* mask)
 
     idx = data_subset[np.logical_or(mask == True, data_subset == np.nan)].index
     interpolated = data_subset.interpolate() #( interpolate all nans
-    data_all[idx] = np.round(interpolated[idx],1) # place newly interpolated values into the master array and round to nearest one decimal 
-    flag_arr[idx] = flag        
+    data_all.loc[idx] = np.round(interpolated[idx], 1)
+    flag_arr.loc[idx] = flag        
 
     return data_all, flag_arr
 
@@ -422,6 +492,12 @@ def interpolate_qaqc(data_all, data_subset, flag, max_hours):
 # using Air_Temperature at each datapoint. If Air_Temp is nan, RH cannot be 
 # converted to EA and thus cannot be interpolated 
 def interpolate_RH_qaqc(data_all_rh, data_subset_rh, data_subset_temp, flag, max_hours):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all_rh = data_all_rh.copy()
+    data_subset_rh = data_subset_rh.copy()
+    data_subset_temp = data_subset_temp.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all_rh))))
     
     # find index of nans in Air_Temp and place nans for corresponding index in RH
@@ -484,6 +560,11 @@ def nearest(items, pivot):
 # which is not bounded by i-1 and i+1 values which are above a certain threshold
 # (e.g. -3 to 3), then you can assume the zero is not a realistic value
 def false_zero_removal(data_all, data_subset, flag, threshold):
+
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     idx_exist = (data_subset.iloc[:].loc[data_subset.isnull()==False].index.tolist()) # indices of existing values
     data_nonnan = data_subset[idx_exist] # only keep non-nan values
@@ -491,13 +572,18 @@ def false_zero_removal(data_all, data_subset, flag, threshold):
     for i in range(1,len(data_nonnan)-1):
         if data_nonnan.iloc[i] == 0 and abs(data_nonnan.iloc[i-1] - data_nonnan.iloc[i]) >= threshold or data_nonnan.iloc[i] == 0 and abs(data_nonnan.iloc[i+1] - data_nonnan.iloc[i]) >= threshold:
             idx = data_nonnan.index[i]
-            data_all[idx] = np.nan # place nans if duplicates found
-            flag_arr[idx] = flag        
+            data_all.loc[idx] = np.nan # place nans if duplicates found
+            flag_arr.loc[idx] = flag        
 
     return data_all, flag_arr
 
 #%% Fix jumps in precipitation data from sudden drainage events during site visits
 def precip_drainage_fix(data_all, data_subset, flag, dt_yr, dt, wx_stations_name, year):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     # Read in the CSV containing specific summer dates for certain wx stations
@@ -549,6 +635,11 @@ def precip_drainage_fix(data_all, data_subset, flag, dt_yr, dt, wx_stations_name
 #%% Detect and fix decreasing trends in PC_Raw_Pipe data which can
 # be linked to evaporation
 def fix_pc_pipe_evaporation(data_all, data_subset, flag):
+    
+    # Ensure data_all and data_subset are copies if they are slices of other DataFrames
+    data_all = data_all.copy()
+    data_subset = data_subset.copy()
+    
     flag_arr = pd.Series(np.zeros((len(data_all))))
     
     # create temp array and find nans

@@ -181,4 +181,7 @@ for l in range(len(wx_stations_name)):
     
     # to import only last week of data
     df_full[sql_file_qaqc.index[-1]+1:].to_sql(name='qaqc_%s' %wx_stations_name[l], con=engine, if_exists = 'append', index=False)
-#%%
+
+#%% Close the sql connection after the loop has completed
+print('## Finished creating empty rows for newly qaqc data for all stations ##')     
+engine.dispose()
