@@ -58,7 +58,7 @@ for l in range(len(wx_stations_name)):
     #%% Make sure there is no gap in datetime (all dates are consecutive) and place
     # nans in all other values if any gaps are identified
     df_dt = pd.Series.to_frame(sql_file['DateTime'])    
-    sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index()
+    sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index()
     dt_sql = pd.to_datetime(sql_file['DateTime'])
     
     # get your indices for each water year

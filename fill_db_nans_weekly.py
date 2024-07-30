@@ -104,7 +104,7 @@ for l in range(len(wx_stations_name)):
     # records have no gaps in the DateTime column (i.e. hourly records are 
     # continuous every hour)
     sql_file = pd.read_sql(sql="SELECT * FROM clean_" + sql_database, con = engine)
-    sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
+    sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index() # make sure records are continuous every hour
     sql_file_qaqc = pd.read_sql(sql="SELECT * FROM qaqc_" + sql_database, con = engine)
 
     #%% Only select earliest possible date for full year
@@ -137,14 +137,14 @@ for l in range(len(wx_stations_name)):
     
     # add nans if missing records        
     nanout = [c for c in new_df.columns if c not in ['DateTime', 'WatYr']]
-    new_df[nanout] = np.nan
+    new_df.loc[:, nanout] = np.nan
     
     # add flags columns
     colname = nanout
     colname_flags = [direction + '_flags' for direction in colname]
     
     # merge both dataframes together
-    new_df[colname_flags] = np.nan
+    new_df.loc[:, colname_flags] = np.nan
     
     # sort columns by alphabetical names
     colname_new = new_df.columns[2:]
@@ -173,7 +173,7 @@ for l in range(len(wx_stations_name)):
                 WatYr = int(str(df_full['DateTime'].iloc[nan_idxs[i]]).split('-')[0])+1
             WatYrs.append(WatYr) 
             
-        df_full['WatYr'].iloc[nan_idxs] = WatYrs
+        df_full.loc[nan_idxs, 'WatYr'] = WatYrs
     
     #%% import database to SQL
     # to import an entirely new database with all historic data

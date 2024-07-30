@@ -44,7 +44,7 @@ for l in range(len(wx_stations_name)):
         deltas = sql_file['DateTime'].diff()[1:]
         same_vals = deltas[deltas < timedelta(hours=1)]
         sql_file = sql_file.drop(same_vals.index)
-        sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
+        sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index() # make sure records are continuous every hour
        
         # recalculate water year for specific weather stations in qaqc as a result
         # (new year starts on 10.01.YYYY). If months are 
@@ -63,7 +63,7 @@ for l in range(len(wx_stations_name)):
     # else if not rennell or datlamen (i.e. for all other stations), make sure
     # time is consecutively increasing by one hour, if not add records and place nans
     else:
-        sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index() # make sure records are continuous every hour
+        sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index() # make sure records are continuous every hour
         
     #%% make sure you only go as far as specific date for all wx stations for current water year
     qaqc_upToDate = (datetime.now()- dtime.timedelta(days=7)).strftime("%Y-%m-%d %H") + ':00:00' # todays date rounded to nearest hour
@@ -75,7 +75,7 @@ for l in range(len(wx_stations_name)):
     #%% Make sure there is no gap in datetime (all dates are consecutive) and place
     # nans in all other values if any gaps are identified
     df_dt = pd.Series.to_frame(sql_file['DateTime'])    
-    sql_file = sql_file.set_index('DateTime').asfreq('1H').reset_index()
+    sql_file = sql_file.set_index('DateTime').asfreq('h').reset_index()
     dt_sql = pd.to_datetime(sql_file['DateTime'])
     
     # get your indices for each water year
