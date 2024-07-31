@@ -6,8 +6,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
 import datetime as dtime
-from sqlalchemy import create_engine, MetaData, Table, text
-import logging
+from sqlalchemy import create_engine, MetaData, Table
 
 #%% import support functions
 import qaqc_functions
@@ -27,7 +26,7 @@ wx_stations_name = list(map(lambda st: str.replace(st, 'clean_', ''), wx_station
 wx_stations_name_cap = [wx_name.capitalize() for wx_name in wx_stations_name] # capitalise station name
 
 #%% Loop over each station at a time and clean up the air temperature variable
-for l in range(1,2):#len(wx_stations_name)):
+for l in range(len(wx_stations_name)):
     sql_database = wx_stations_name[l]
     sql_name = wx_stations_name_cap[l]
     print('###### Cleaning AirTemp data for station: %s ######' %(sql_name))     
@@ -218,7 +217,7 @@ for l in range(1,2):#len(wx_stations_name)):
     
             # import current qaqc sql db and find columns matching the qaqc variable here
             existing_qaqc_sql = pd.read_sql('SELECT * FROM %s' %sql_qaqc_name, engine)
-             
+    
             #%%  write data to sql database using brute approach (re-write whole db - quicker on laptop but gets instantly killed on remote desktop)
             # colnames = existing_qaqc_sql.columns
             # col_positions = [i for i, s in enumerate(colnames) if var in s]
@@ -246,7 +245,7 @@ for l in range(1,2):#len(wx_stations_name)):
             # with engine.connect() as con:
             #         con.execute('ALTER TABLE `qaqc_%s`' %wx_stations_name[l] + ' ADD PRIMARY KEY (`DateTime`);')
             
-            #%%  write data to sql database using soft approach (re-write only idx and vars needed - very slow on laptop but fast on remote desktop)            
+            #%%  write data to sql database using soft approach (re-write only idx and vars needed - very slow on laptop but fast on remote desktop)
             qaqc_idx_sql = existing_qaqc_sql[var].notna()[::-1].idxmax()+1 # find latest valid value in sql database and fill after that
             dt_qaqc_idx_sql = existing_qaqc_sql['DateTime'].iloc[qaqc_idx_sql] # find matching datetime object in the qaqc db
             qaqc_idx_sql = (np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql)[0]) if np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql).size > 0 else 0
