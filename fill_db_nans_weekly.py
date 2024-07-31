@@ -185,4 +185,7 @@ for l in range(len(wx_stations_name)):
 
 #%% Close the sql connection after the loop has completed
 print('## Finished creating empty rows for newly qaqc data for all stations ##')     
-engine.dispose()
+try:
+    engine.dispose()
+except Exception as e:
+    print(f"// Error closing (disposing) the connection with SQL - that's ok as long as empty rows are being added weekly in the qaqc_dbs. Error': {e}")
