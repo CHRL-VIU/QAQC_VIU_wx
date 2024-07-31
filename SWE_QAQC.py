@@ -218,13 +218,13 @@ for l in range(len(wx_stations_name)):
             # then only keep 6 as all other flags don't matter if it's already been
             # zeroed out (i.e. flag 6 is the dominant flag)
             idx_flags6 = [i for i, s in enumerate(qaqc_arr['SWE_flags']) if '6' in s]
-            qaqc_arr['SWE_flags'].iloc[idx_flags6] = '6'
+            qaqc_arr.loc[idx_flags6, 'SWE_flags'] = '6'
             
             # if flag is both [8,7], it means the data was interpolated but the gap
             # between i and i-1 is greater than the step size required so you want
             # to remove the interpolated value and place nans (and thus only keep 7)
             idx_flags89 = [i for i, s in enumerate(qaqc_arr['SWE_flags']) if '8,9' in s]
-            qaqc_arr[var_flags].iloc[idx_flags89] = '9'     
+            qaqc_arr.loc[idx_flags89, var_flags] = '9'     
     
             #%% append to qaqc_arr_final after every k iteration
             qaqc_arr_final.append(qaqc_arr.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)])
@@ -272,7 +272,7 @@ for l in range(len(wx_stations_name)):
             #         con.execute('ALTER TABLE `qaqc_%s`' %wx_stations_name[l] + ' ADD PRIMARY KEY (`DateTime`);')
             
              #%%  write data to sql database using soft approach (re-write only idx and vars needed - very slow on laptop but fast on remote desktop)
-            qaqc_idx_sql = existing_qaqc_sql[var].notna()[::-1].idxmax()+1 # find latest valid value in sql database and fill after that
+            qaqc_idx_sql = existing_qaqc_sql[var_flags].notna()[::-1].idxmax()+1 # find latest valid value in sql database and fill after that
             dt_qaqc_idx_sql = existing_qaqc_sql['DateTime'].iloc[qaqc_idx_sql] # find matching datetime object in the qaqc db
             qaqc_idx_sql = (np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql)[0]) if np.flatnonzero(qaqced_array['DateTime'] == dt_qaqc_idx_sql).size > 0 else 0
             print('Amount of days to push to qaqc database: %d' %(int((qaqced_array.index[-1] - qaqced_array.index[qaqc_idx_sql])/24)))
