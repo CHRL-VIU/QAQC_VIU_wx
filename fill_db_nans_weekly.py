@@ -68,8 +68,9 @@ for i in range(len(wx_stations_lst)):
 # or because there is no snowDepth sensor there, and sort out the name formatting
 wx_stations = [x for x in wx_stations if "clean" in x ]
 wx_stations = [x for x in wx_stations if not "legacy" in x] # remove legacy data for Cairnridgerun
-wx_stations = [x for x in wx_stations if not "_test" in x] # remove test databases
+wx_stations = [x for x in wx_stations if not "test" in x] # remove test databases
 wx_stations = [x for x in wx_stations if not "archive" in x] # remove archive from list
+wx_stations = [x for x in wx_stations if not "backup" in x] # remove archive from list
 
 # deal with Stephanies that are or are not connected to satellite live transmission
 keep_steph = False
