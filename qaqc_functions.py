@@ -246,7 +246,7 @@ def sdepth_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summ
             
         else: # else if mean is smaller, then use arbitrary value as threshold
             data_bool = data_all.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)].copy() < arbitrary_value
-        data_bool = data_bool.replace({True:1, False:0})
+        data_bool = data_bool.replace({True: 1, False: 0}).infer_objects(copy=False)
         data_bool[data_subset[data_subset.isnull()].index] = 1 # replace nans with 1
         
         # find index of longest sequence, making sure you're not picking up
@@ -330,7 +330,7 @@ def SWE_summer_zeroing(data_all, data_subset, flag, dt_yr, dt_summer_yr, summer_
             
         else: # else if mean is smaller, then use arbitrary value as threshold
             data_bool = data_all.iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)] < arbitrary_value
-        data_bool = data_bool.replace({True:1, False:0})
+        data_bool = data_bool.replace({True: 1, False: 0}).infer_objects(copy=False)
         data_bool[data_subset[data_subset.isnull()].index] = 1 # replace nans with 1
         
         # find index of longest sequence, making sure you're not picking up
