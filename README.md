@@ -1,10 +1,11 @@
-# Read me please
-This folder contains codes designed to qaqc weather station data for the VIU hydromet network (https://qaqc-miniapp.shinyapps.io/qaqc_miniapp/). Note that each variable has a code associated with it that qaqcs the data (see this folder). The master code which contains all the qaqc functions necessary for the codes to work ("qaqc_functions.py") is also in this folder. 
+# READ ME
+This GitHub repository contains a series of Python codes that are part of the QAQC pipeline to quality-assure and quality-check (QAQC) weather station data for the VIU hydromet network (http://graph.viu-hydromet-wx.ca). For more information on how the codes operate and the general workflow, please read the 'qaqc_workflow_notes.PDF' on this repository.
 
-Each qaqc codes import the "qaqc_stations_list.py", which is a python file containing the name of the clean databases which required qaqcing on the database. For each of these stations, there is a list of variables which will be qaqced everytime the codes are ran. If one wants to add or remove a variable or weather station to qaqc, they can simply add or remove the necessary elements in the "qaqc_stations_list.py". All data on the qaqc webpage and databases contain a series of flag numbers, which are described below.
+## Summary:
+Each weather station variable (e.g. AirTemp, RH, BP, SWE, etc.) has a code associated with it that QAQCes the data. The master code which contains all the QAQC functions necessary for the codes to work ("qaqc_functions.py") is also in this repo. To add or remove a variable, or weather station, to be QAQCed, one can modify the Python file 'qaqc_stations_list.py'. For each QAQC process, there is an associated flag number which indicates why a specific data value may have been QAQCed. These are described below.
 
 ## QAQC flags by variable:
-The order of the flags in the below tables reflects the order of each qaqc step in the code - this is why flag numbers are not increasing chronologically. However, an attempt was made to standardise the flag number for each step so that they can be recognised easily across variables (e.g. outlier removal #1 is always Flag #1). 
+The order of the QAQC flags in the below tables reflects the order of each QAQC step in the codes - this is why flag numbers are not increasing chronologically. However, an attempt was made to standardise the flag numbers for each step so that they can be recognised easily across variables (e.g. no QAQC is always Flag #0, outlier removal #1 is always Flag #1, etc.). 
 
 | Snow Depth Flags: | 
 | ------------- |
@@ -105,9 +106,9 @@ The order of the flags in the below tables reflects the order of each qaqc step 
 | 2.	Remove non-sensical values above **140 km/h** or below **0 km/h** |
 | 3.	Remove duplicate consecutive values for window size of **50 hours** | 
 
-## QAQC known issues regarding offsets, issues with qaqc worklfow, or common issue with the data:
+## QAQC known issues regarding offsets, issues with QAQC worklfow, or common issue with the data:
 
-Below are some examples where the qaqc process has either not worked well or there are offset in the data which have not been corrected for, due to lack of clear understanding of the reason behind the offset. Decisions must be made as to what to do with these offsets, and then re-run the qaqc code on the offset-corrected data. Note that this list is by no means exhaustive. 
+Below are some examples where the QAQC process has either not worked well or there are offset in the data which have not been corrected for, due to lack of clear understanding of the reason behind the offset. Decisions must be made as to what to do with these offsets, and then re-run the QAQC codes on the offset-corrected data. Note that this list is by no means exhaustive and was compiled on 2024-01-15.
 
 ### Snow Depth:
 1.	Cainridgerun:
