@@ -52,6 +52,7 @@ import os
 from qaqc_stations_list import *
 
 #%% establish a connection with MySQL database 'viuhydro_wx_data_v2'
+os.chdir('/python-scripts')
 import config
 engine = config.main_sql()
 
