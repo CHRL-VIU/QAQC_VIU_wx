@@ -7,13 +7,14 @@ from datetime import datetime, timedelta
 import numpy as np
 import datetime as dtime
 from sqlalchemy import create_engine, MetaData, Table
-
+import os
 #%% import support functions
 import qaqc_functions
 from push_sql_function import get_engine, get_metadata, update_records
 from qaqc_stations_list import *
 
 #%% establish a connection with MySQL database 'viuhydro_wx_data_v2'
+os.chdir('/python-scripts')
 import config
 engine = config.main_sql()
 metadata = get_metadata(engine)
