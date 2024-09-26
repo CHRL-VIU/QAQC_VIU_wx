@@ -104,16 +104,7 @@ for l in range(len(wx_stations_name)):
             raw = sql_file[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)]
             qaqc_arr = sql_file.copy() # array to QAQC
             
-            #%% quick fix for weird sensor values at specific weather stations
-            if wx_stations_name[l] == 'mountarrowsmith' and yr_range[k] == 2023: # index for year 2023-24
-                data = qaqc_arr[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)].copy()
-                idx_to_remove = int(np.flatnonzero(sql_file['DateTime'] =='2024-04-13 20:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] =='2024-04-13 20:00:00').size > 0 else 0
-                for i in range(idx_to_remove-data.index[0],len(data)-1): # only for indices from Apr 13 2024 onwards
-                    if data.iloc[i] < -2: # -2 in degrees C (eye balled)
-                        idx = data.index[i]
-                        data.loc[idx] = np.nan
-                qaqc_arr[var] = data
-                
+            #%% quick fix for weird sensor values at specific weather stations                
             if wx_stations_name[l] == 'upperrussell' and yr_range[k] == 2020: # index for year 2020-21
                 data = qaqc_arr[var].iloc[np.arange(dt_yr[0].item(),dt_yr[1].item()+1)].copy()
                 idx_to_remove = int(np.flatnonzero(sql_file['DateTime'] =='2021-06-21 06:00:00')[0]) if np.flatnonzero(sql_file['DateTime'] =='2021-06-21 06:00:00').size > 0 else 0
